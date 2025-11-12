@@ -12,10 +12,6 @@ We plan to address these challenges by training models on large, diverse dataset
 ## 2. Datasets
 We plan to experiment with publicly available emotion recognition datasets. Some potential datasets include:
 
-- **[Speech Emotion Recognition Dataset (Hugging Face)](https://huggingface.co/datasets/UniqueData/speech-emotion-recognition-dataset)**  
-  - Size: 10k < *n* < 100k  
-  - Labels: 4  
-
 - **[ISEAR Dataset (Kaggle)](https://www.kaggle.com/datasets/faisalsanto007/isear-dataset)**  
   - Size: 41k < *n* < 42k  
   - Labels: 3  
