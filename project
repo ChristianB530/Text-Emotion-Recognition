@@ -25,6 +25,7 @@ import torch.nn.functional as F
 torch.manual_seed(42)
 np.random.seed(42)
 
+
 class EmotionDataLoader:
     """Loader for emotion recognition datasets"""
     
@@ -60,4 +61,70 @@ class EmotionDataLoader:
         except FileNotFoundError as e:
             print(f"Error loading dataset: {e}")
             return None, None, None
+
+
+
+
+
+
+
+
+
+class BaselineModel:
+    """
+    Baseline Logistic Regression Model
+    Simple, interpretable, and provides solid performance baseline
+    """
     
+    def __init__(self):
+        self.vectorizer = TfidfVectorizer(
+            max_features=5000,
+            stop_words='english',
+            ngram_range=(1, 2),
+            min_df=2,
+            max_df=0.8
+        )
+        self.model = None
+        self.label_encoder = LabelEncoder()
+    
+    def prepare_features(self, texts, fit=True):
+        """Convert texts to TF-IDF features"""
+        if fit:
+            features = self.vectorizer.fit_transform(texts)
+        else:
+            features = self.vectorizer.transform(texts)
+        return features
+    
+    def train(self, X_train, y_train, X_val, y_val):
+        """Train the logistic regression baseline model"""
+        print("Training Logistic Regression Baseline...")
+        
+        self.model = LogisticRegression(
+            random_state=42,
+            max_iter=1000,
+            multi_class='multinomial',
+            class_weight='balanced',
+            C=1.0,
+            n_jobs=-1
+        )
+        
+        self.model.fit(X_train, y_train)
+        
+        # Validation performance
+        y_pred_val = self.model.predict(X_val)
+        val_accuracy = accuracy_score(y_val, y_pred_val)
+        val_f1 = f1_score(y_val, y_pred_val, average='macro')
+        
+        print(f"Baseline Model Performance:")
+        print(f"  Validation Accuracy: {val_accuracy:.4f}")
+        print(f"  Validation Macro F1: {val_f1:.4f}")
+        
+        return self.model
+    
+    def predict(self, X):
+        """Make predictions"""
+        return self.model.predict(X)
+    
+    def predict_proba(self, X):
+        """Get prediction probabilities"""
+        return self.model.predict_proba(X)
