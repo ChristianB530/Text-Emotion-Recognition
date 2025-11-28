@@ -154,3 +154,52 @@ print(probabilities)
 
 
 
+
+############################################################################################################
+
+class TextPreprocessor:
+    """Text preprocessing for emotion recognition"""
+    
+    def __init__(self):
+        self.contractions = {
+            "don't": "do not", "can't": "cannot", "won't": "will not",
+            "it's": "it is", "i'm": "i am", "you're": "you are",
+            "they're": "they are", "we're": "we are", "that's": "that is",
+            "what's": "what is", "where's": "where is", "how's": "how is",
+            "i've": "i have", "you've": "you have", "we've": "we have",
+            "they've": "they have", "i'll": "i will", "you'll": "you will"
+        }
+    
+    def clean_text(self, text):
+        """Clean and preprocess text data"""
+        # Handle missing values
+        if pd.isna(text):
+            return ""
+        
+        # Convert to lowercase
+        text = text.lower()
+        
+        # Expand contractions
+        # Replaces contractions with full forms ("can't" → "cannot")
+        for cont, expanded in self.contractions.items():
+            text = text.replace(cont, expanded)
+        
+        # Remove special characters but keep basic punctuation
+        # For emotion recognition, punctuation like "!" and "?" can carry emotional cues so we keep them
+        text = re.sub(r'[^a-zA-Z\s!?.,]', '', text)
+        
+        # Remove extra whitespace
+        text = ' '.join(text.split())
+        
+        return text
+    
+    def preprocess_dataset(self, df, text_column='text'):
+        """Preprocess entire dataset"""
+        print("Preprocessing text data...")
+        df_clean = df.copy()   # Create a copy to avoid modifying original
+        df_clean[text_column] = df_clean[text_column].apply(self.clean_text)
+        print("Text preprocessing completed!")
+        return df_clean
+
+
+
