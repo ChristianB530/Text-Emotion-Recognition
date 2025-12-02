@@ -155,6 +155,7 @@ print(probabilities)
 
 
 
+
 ############################################################################################################
 
 class TextPreprocessor:
@@ -232,7 +233,7 @@ class Vocabulary:
             if count >= self.freq_threshold: # Only add words above frequency threshold
                 self.stoi[word] = idx
                 self.itos[idx] = word
-                idx += 1
+                idx+=1
                 
     def numericalize(self, text):
         tokenized_text = [
@@ -282,4 +283,30 @@ class EmotionDataset(Dataset):
         else:
             label = self.labels[index]
             return text_tensor, torch.tensor(label, dtype=torch.long)
+
+# Clean the text
+preprocessor = TextPreprocessor()
+train_df_clean = preprocessor.preprocess_dataset(train_df)
+val_df_clean = preprocessor.preprocess_dataset(val_df)
+test_df_clean = preprocessor.preprocess_dataset(test_df)
+
+# Ensure labels are integers
+train_df_clean['label'] = train_df_clean['label'].astype(int)
+val_df_clean['label'] = val_df_clean['label'].astype(int)
+test_df_clean['label'] = test_df_clean['label'].astype(int)
+
+# Build Vocabulary
+print("\nBuilding Vocabulary...")
+vocab = Vocabulary(max_size=5000)
+vocab.build_vocabulary(train_df_clean['text'].tolist())
+print(f"Vocabulary size: {len(vocab.stoi)}")
+
+# Create Datasets & Loaders
+train_dataset = EmotionDataset(train_df_clean, vocab, max_len=50)
+val_dataset = EmotionDataset(val_df_clean, vocab, max_len=50)
+test_dataset = EmotionDataset(test_df_clean, vocab, max_len=50)
+
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
