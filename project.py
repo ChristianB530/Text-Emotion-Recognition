@@ -201,5 +201,42 @@ class TextPreprocessor:
         print("Text preprocessing completed!")
         return df_clean
 
+class Vocabulary:
+    """
+    Builds a vocabulary mapping words to integers.
+    Reserved tokens: 
+    0: <PAD> (padding for short sentences)
+    1: <UNK> (unknown words)
+    """
+    def __init__(self, freq_threshold=2, max_size=5000):
+        self.itos = {0: "<PAD>", 1: "<UNK>"}
+        self.stoi = {"<PAD>": 0, "<UNK>": 1}
+        self.freq_threshold = freq_threshold
+        self.max_size = max_size
+
+    def build_vocabulary(self, sentence_list):
+        frequencies = Counter()
+        idx = 2
+        
+        for sentence in sentence_list:
+            for word in sentence.split():
+                frequencies[word] += 1
+                
+        # Sort by frequency and limit size (matching your Baseline 5000 features)
+        common_words = frequencies.most_common(self.max_size - 2)
+        
+        for word, count in common_words:
+            if count >= self.freq_threshold:
+                self.stoi[word] = idx
+                self.itos[idx] = word
+                idx += 1
+                
+    def numericalize(self, text):
+        tokenized_text = [
+            self.stoi[token] if token in self.stoi else self.stoi["<UNK>"]
+            for token in text.split()
+        ]
+        return tokenized_text
+
 
 
