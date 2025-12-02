@@ -238,5 +238,46 @@ class Vocabulary:
         ]
         return tokenized_text
 
-
+class EmotionDataset(Dataset):
+    """
+    PyTorch Dataset class for Emotion Recognition.
+    """
+    def __init__(self, df, vocab, max_len=50, is_test=False):
+        self.df = df
+        self.vocab = vocab
+        self.max_len = max_len
+        self.is_test = is_test
+        
+        # We assume the dataframe has 'text' and 'label' columns
+        self.texts = df['text'].tolist()
+        if not self.is_test:
+            self.labels = df['label'].tolist()
+            # If labels are strings, ensure they are encoded before passing here
+            # or handle encoding inside depending on your pipeline preferences
+        
+    def __len__(self):
+        return len(self.df)
+    
+    def __getitem__(self, index):
+        text = self.texts[index]
+        
+        # 1. Convert text to integers
+        tokenized_indices = self.vocab.numericalize(text)
+        
+        # 2. Pad or Truncate
+        if len(tokenized_indices) < self.max_len:
+            # Pad with 0s
+            padded = tokenized_indices + [0] * (self.max_len - len(tokenized_indices))
+        else:
+            # Truncate
+            padded = tokenized_indices[:self.max_len]
+            
+        # 3. Convert to Tensor
+        text_tensor = torch.tensor(padded, dtype=torch.long)
+        
+        if self.is_test:
+            return text_tensor
+        else:
+            label = self.labels[index]
+            return text_tensor, torch.tensor(label, dtype=torch.long)
 
