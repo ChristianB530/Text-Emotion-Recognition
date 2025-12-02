@@ -201,6 +201,8 @@ class TextPreprocessor:
         print("Text preprocessing completed!")
         return df_clean
 
+####################################################################################
+
 class Vocabulary:
     """
     Builds a vocabulary mapping words to integers.
@@ -209,24 +211,25 @@ class Vocabulary:
     1: <UNK> (unknown words)
     """
     def __init__(self, freq_threshold=2, max_size=5000):
-        self.itos = {0: "<PAD>", 1: "<UNK>"}
+        self.itos = {0: "<PAD>", 1: "<UNK>"} # debugging
         self.stoi = {"<PAD>": 0, "<UNK>": 1}
         self.freq_threshold = freq_threshold
         self.max_size = max_size
 
     def build_vocabulary(self, sentence_list):
         frequencies = Counter()
-        idx = 2
+        idx = 2 # Starting index for actual words (1 & 0 are reserved)
         
         for sentence in sentence_list:
             for word in sentence.split():
                 frequencies[word] += 1
                 
-        # Sort by frequency and limit size (matching your Baseline 5000 features)
+        # Sort by frequency and limit size
         common_words = frequencies.most_common(self.max_size - 2)
         
+        # Assign indices to words
         for word, count in common_words:
-            if count >= self.freq_threshold:
+            if count >= self.freq_threshold: # Only add words above frequency threshold
                 self.stoi[word] = idx
                 self.itos[idx] = word
                 idx += 1
@@ -248,12 +251,11 @@ class EmotionDataset(Dataset):
         self.max_len = max_len
         self.is_test = is_test
         
-        # We assume the dataframe has 'text' and 'label' columns
+        # Assume the dataframe has 'text' and 'label' columns
         self.texts = df['text'].tolist()
         if not self.is_test:
             self.labels = df['label'].tolist()
-            # If labels are strings, ensure they are encoded before passing here
-            # or handle encoding inside depending on your pipeline preferences
+            # Assume labels are already encoded as integers
         
     def __len__(self):
         return len(self.df)
@@ -261,18 +263,18 @@ class EmotionDataset(Dataset):
     def __getitem__(self, index):
         text = self.texts[index]
         
-        # 1. Convert text to integers
+        # Convert text to integers
         tokenized_indices = self.vocab.numericalize(text)
         
-        # 2. Pad or Truncate
+        # Pad or Truncate
         if len(tokenized_indices) < self.max_len:
-            # Pad with 0s
+            # Pad with 0s if too short
             padded = tokenized_indices + [0] * (self.max_len - len(tokenized_indices))
         else:
-            # Truncate
+            # Truncate if too long
             padded = tokenized_indices[:self.max_len]
             
-        # 3. Convert to Tensor
+        # Convert to Tensor
         text_tensor = torch.tensor(padded, dtype=torch.long)
         
         if self.is_test:
