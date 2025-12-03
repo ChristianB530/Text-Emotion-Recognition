@@ -155,6 +155,7 @@ print(probabilities)
 
 
 
+
 ############################################################################################################
 
 class TextPreprocessor:
@@ -201,5 +202,111 @@ class TextPreprocessor:
         print("Text preprocessing completed!")
         return df_clean
 
+####################################################################################
 
+class Vocabulary:
+    """
+    Builds a vocabulary mapping words to integers.
+    Reserved tokens: 
+    0: <PAD> (padding for short sentences)
+    1: <UNK> (unknown words)
+    """
+    def __init__(self, freq_threshold=2, max_size=5000):
+        self.itos = {0: "<PAD>", 1: "<UNK>"} # debugging
+        self.stoi = {"<PAD>": 0, "<UNK>": 1}
+        self.freq_threshold = freq_threshold
+        self.max_size = max_size
+
+    def build_vocabulary(self, sentence_list):
+        frequencies = Counter()
+        idx = 2 # Starting index for actual words (1 & 0 are reserved)
+        
+        for sentence in sentence_list:
+            for word in sentence.split():
+                frequencies[word] += 1
+                
+        # Sort by frequency and limit size
+        common_words = frequencies.most_common(self.max_size - 2)
+        
+        # Assign indices to words
+        for word, count in common_words:
+            if count >= self.freq_threshold: # Only add words above frequency threshold
+                self.stoi[word] = idx
+                self.itos[idx] = word
+                idx+=1
+                
+    def numericalize(self, text):
+        tokenized_text = [
+            self.stoi[token] if token in self.stoi else self.stoi["<UNK>"]
+            for token in text.split()
+        ]
+        return tokenized_text
+
+class EmotionDataset(Dataset):
+    """
+    PyTorch Dataset class for Emotion Recognition.
+    """
+    def __init__(self, df, vocab, max_len=50, is_test=False):
+        self.df = df
+        self.vocab = vocab
+        self.max_len = max_len
+        self.is_test = is_test
+        
+        # Assume the dataframe has 'text' and 'label' columns
+        self.texts = df['text'].tolist()
+        if not self.is_test:
+            self.labels = df['label'].tolist()
+            # Assume labels are already encoded as integers
+        
+    def __len__(self):
+        return len(self.df)
+    
+    def __getitem__(self, index):
+        text = self.texts[index]
+        
+        # Convert text to integers
+        tokenized_indices = self.vocab.numericalize(text)
+        
+        # Pad or Truncate
+        if len(tokenized_indices) < self.max_len:
+            # Pad with 0s if too short
+            padded = tokenized_indices + [0] * (self.max_len - len(tokenized_indices))
+        else:
+            # Truncate if too long
+            padded = tokenized_indices[:self.max_len]
+            
+        # Convert to Tensor
+        text_tensor = torch.tensor(padded, dtype=torch.long)
+        
+        if self.is_test:
+            return text_tensor
+        else:
+            label = self.labels[index]
+            return text_tensor, torch.tensor(label, dtype=torch.long)
+
+# Clean the text
+preprocessor = TextPreprocessor()
+train_df_clean = preprocessor.preprocess_dataset(train_df)
+val_df_clean = preprocessor.preprocess_dataset(val_df)
+test_df_clean = preprocessor.preprocess_dataset(test_df)
+
+# Ensure labels are integers
+train_df_clean['label'] = train_df_clean['label'].astype(int)
+val_df_clean['label'] = val_df_clean['label'].astype(int)
+test_df_clean['label'] = test_df_clean['label'].astype(int)
+
+# Build Vocabulary
+print("\nBuilding Vocabulary...")
+vocab = Vocabulary(max_size=5000)
+vocab.build_vocabulary(train_df_clean['text'].tolist())
+print(f"Vocabulary size: {len(vocab.stoi)}")
+
+# Create Datasets & Loaders
+train_dataset = EmotionDataset(train_df_clean, vocab, max_len=50)
+val_dataset = EmotionDataset(val_df_clean, vocab, max_len=50)
+test_dataset = EmotionDataset(test_df_clean, vocab, max_len=50)
+
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
