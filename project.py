@@ -348,7 +348,6 @@ class EmotionLSTM(nn.Module):
         # Pass through the linear layer
         return self.fc(self.dropout(last_hidden))
 
-
 # Model Training & Evaluation
 def train_model(model, iterator, optimizer, criterion, device):
     """
